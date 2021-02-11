@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Post;
 use Illuminate\Http\Request;
+use Image;
 
 class PostController extends Controller
 {
@@ -18,12 +19,27 @@ class PostController extends Controller
 
     public function store(Request $request){
 
-        $this->validate($request, [
-            'body' => 'required'
+        $validatedData = $this->validate($request, [
+            'body' => 'required',
+            'image' => 'sometimes|image',
         ]);
+        
+        $post = $request->user()->posts()->create($validatedData); 
+       
 
-        $request->user()->posts()->create($request->only('body'));
-
+        if ($request->hasfile('image')) {
+            $image = $request->file('image');
+            $filename = time() . '.' . $image->getClientOriginalExtension();
+            $location = storage_path('app/public/images/') . $filename;
+    
+            Image::make($image)->crop(240, 240)->save($location);
+    
+            $post->image = $filename;
+           
+          }
+          $post->save();
+          
+        
         return back();
     }
 
